@@ -72,20 +72,49 @@ Query::Query(op op_, const Xapian::Query & subquery, double factor)
 	internal = new Xapian::Internal::QueryScaleWeight(factor, subquery);
 }
 
+//add zkb
 Query::Query(op op_, Xapian::valueno slot, const std::string & limit)
 {
     LOGCALL_CTOR(API, "Query", op_ | slot | limit);
 
-    if (op_ == OP_VALUE_GE) {
+	/*if (op_ == OP_VALUE_GE) {
 	if (limit.empty())
-	    internal = MatchAll.internal;
+	internal = MatchAll.internal;
 	else
-	    internal = new Xapian::Internal::QueryValueGE(slot, limit);
-    } else if (usual(op_ == OP_VALUE_LE)) {
+	internal = new Xapian::Internal::QueryValueGE(slot, limit);
+	} else if (usual(op_ == OP_VALUE_LE)) {
 	internal = new Xapian::Internal::QueryValueLE(slot, limit);
-    } else {
+	} else {
 	throw Xapian::InvalidArgumentError("op must be OP_VALUE_LE or OP_VALUE_GE");
-    }
+	}*/
+
+    switch (op_) {
+	    case OP_VALUE_GE : {
+		    if(limit.empty())
+				internal = MatchAll.internal;
+			else
+				internal = new Xapian::Internal::QueryValueGE(slot, limit);
+        }
+		break;
+		case  OP_VALUE_LE : {
+			 internal = new Xapian::Internal::QueryValueLE(slot, limit);
+		}
+        break;
+		case OP_VALUE_GT: {
+		     if (limit.empty())
+			    internal = MatchAll.internal;
+			 else
+		        internal = new Xapian::Internal::QueryValueGT(slot, limit);
+		}
+		break;
+		case OP_VALUE_LT: {
+		    internal = new Xapian::Internal::QueryValueLT(slot, limit);
+		}
+		break;
+	default:
+		throw Xapian::InvalidArgumentError("op must be OP_VALUE_LE or OP_VALUE_GE or OP_VALUE_LT or OP_VALUE_GT");
+		break;
+	}
 }
 
 Query::Query(op op_, Xapian::valueno slot,

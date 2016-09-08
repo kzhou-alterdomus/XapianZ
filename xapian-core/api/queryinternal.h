@@ -165,6 +165,40 @@ class QueryValueGE : public QueryValueBase {
     std::string get_description() const;
 };
 
+//add zkb
+class QueryValueLT : public QueryValueBase {
+    std::string limit;
+
+public:
+    QueryValueLT(Xapian::valueno slot_, const std::string &limit_)
+    : QueryValueBase(slot_), limit(limit_) { }
+
+    PostingIterator::Internal * postlist(QueryOptimiser * qopt, double factor) const;
+
+    void serialise(std::string & result) const;
+	
+    Xapian::Query::op get_type() const  XAPIAN_NOEXCEPT XAPIAN_PURE_FUNCTION;
+   
+    std::string get_description() const;
+};
+
+//add zkb
+class QueryValueGT : public QueryValueBase {
+    std::string limit;
+
+public:
+    QueryValueGT(Xapian::valueno slot_, const std::string &limit_)
+    : QueryValueBase(slot_), limit(limit_) { }
+
+    PostingIterator::Internal * postlist(QueryOptimiser * qopt, double factor) const;
+
+    void serialise(std::string & result) const;
+
+    Xapian::Query::op get_type() const XAPIAN_NOEXCEPT XAPIAN_PURE_FUNCTION;
+
+    std::string get_description() const;
+};
+
 class QueryBranch : public Query::Internal {
     virtual Xapian::Query::op get_op() const = 0;
 

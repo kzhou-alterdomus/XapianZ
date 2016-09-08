@@ -43,6 +43,8 @@
 #include "matcher/queryoptimiser.h"
 #include "matcher/valuerangepostlist.h"
 #include "matcher/valuegepostlist.h"
+#include "matcher/valuegtpostlist.h"
+#include "matcher/valueltpostlist.h"
 #include "net/length.h"
 #include "serialise-double.h"
 #include "termlist.h"
@@ -936,6 +938,128 @@ QueryValueGE::get_description() const
     description_append(desc, limit);
     return desc;
 }
+
+//add zkb  GT
+PostingIterator::Internal *
+QueryValueGT::postlist(QueryOptimiser *qopt, double factor) const
+{
+    LOGCALL(QUERY, PostingIterator::Internal *, "QueryValueGE::postlist", qopt | factor);
+    if (factor != 0.0)
+	qopt->inc_total_subqs();
+    const Xapian::Database::Internal & db = qopt->db;
+    const string & lb = db.get_value_lower_bound(slot);
+    // If lb.empty(), the backend doesn't provide value bounds.
+    if (!lb.empty()) {
+	if (limit > db.get_value_upper_bound(slot)) {
+	    RETURN(new EmptyPostList);
+	}
+	if (limit < lb) {
+	    // The range check isn't needed, but we do still need to consider
+	    // which documents have a value set in this slot.  If this value is
+	    // set for all documents, we can replace it with the MatchAll
+	    // postlist, which is especially efficient if there are no gaps in
+	    // the docids.
+	    if (db.get_value_freq(slot) == db.get_doccount()) {
+		RETURN(db.open_post_list(string()));
+	    }
+	}
+    }
+    RETURN(new ValueGtPostList(&db, slot, limit));
+}
+
+//add zkb  GT
+void
+QueryValueGT::serialise(string & result) const
+{
+    if (slot < 15) {
+	result += static_cast<char>(0x20 | 0x10 | slot);
+    } else {
+	result += static_cast<char>(0x20 | 0x10 | 15);
+	result += encode_length(slot - 15);
+    }
+    result += encode_length(limit.size());
+    result += limit;
+}
+
+//add zkb  GT
+Query::op
+QueryValueGT::get_type() const XAPIAN_NOEXCEPT
+{
+    return Query::OP_VALUE_GT;
+}
+
+//add zkb  GT
+string
+QueryValueGT::get_description() const
+{
+    string desc = "VALUE_GT ";
+    desc += str(slot);
+    desc += ' ';
+    description_append(desc, limit);
+    return desc;
+}
+
+//add zkb  LT
+PostingIterator::Internal *
+QueryValueLT::postlist(QueryOptimiser *qopt, double factor) const
+{
+	LOGCALL(QUERY, PostingIterator::Internal *, "QueryValueLE::postlist", qopt | factor);
+	if (factor != 0.0)
+		qopt->inc_total_subqs();
+	const Xapian::Database::Internal & db = qopt->db;
+	const string & lb = db.get_value_lower_bound(slot);
+	// If lb.empty(), the backend doesn't provide value bounds.
+	if (!lb.empty()) {
+		if (limit < lb) {
+			RETURN(new EmptyPostList);
+		}
+		if (limit >= db.get_value_upper_bound(slot)) {
+			// The range check isn't needed, but we do still need to consider
+			// which documents have a value set in this slot.  If this value is
+			// set for all documents, we can replace it with the MatchAll
+			// postlist, which is especially efficient if there are no gaps in
+			// the docids.
+			if (db.get_value_freq(slot) == db.get_doccount()) {
+				RETURN(db.open_post_list(string()));
+			}
+		}
+	}
+	RETURN(new ValueLtPostList(&db, slot, limit));
+}
+
+//add zkb  GT
+void
+QueryValueLT::serialise(string & result) const
+{
+	if (slot < 15) {
+		result += static_cast<char>(0x20 | 0x10 | slot);
+	}
+	else {
+		result += static_cast<char>(0x20 | 0x10 | 15);
+		result += encode_length(slot - 15);
+	}
+	result += encode_length(limit.size());
+	result += limit;
+}
+
+//add zkb  GT
+Query::op
+QueryValueLT::get_type() const XAPIAN_NOEXCEPT
+{
+	return Query::OP_VALUE_LT;
+}
+
+//add zkb  LT
+string
+QueryValueLT::get_description() const
+{
+	string desc = "VALUE_LT ";
+	desc += str(slot);
+	desc += ' ';
+	description_append(desc, limit);
+	return desc;
+}
+
 
 PostingIterator::Internal *
 QueryWildcard::postlist(QueryOptimiser * qopt, double factor) const
