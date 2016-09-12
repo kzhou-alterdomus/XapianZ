@@ -1,3 +1,20 @@
-Init from Xapian.org 1.4. The purpose of writing is to express some of the functions of my personal increase. 
-Author by heroZkb 
-author email: zhoukuanbin@163.com
+Welcome to Xapian!
+==================
+
+Xapian is free software, licensed under the GNU General Public License
+(version 2 or later).  You should find a copy of the GNU General Public
+License in the file "COPYING" in the top level of this distribution of
+Xapian.
+
+See the file "INSTALL" for information on building and installing Xapian.
+If you're wanting to modify Xapian itself or build sources from git,
+then the contents of the file "HACKING" are recommended reading.
+
+You can find downloads, mailing lists, git access, and other useful
+resources on the Xapian website:
+
+https://xapian.org/
+
+There's also a wiki with user-contributed and evolving documentation:
+
+https://trac.xapian.org/wiki/

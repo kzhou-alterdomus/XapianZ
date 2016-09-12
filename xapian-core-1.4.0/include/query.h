@@ -111,6 +111,10 @@ class XAPIAN_VISIBILITY_DEFAULT Query {
 	OP_MAX = 14,
 	OP_WILDCARD = 15,
 
+	//add zkb
+    OP_VALUE_GT = 16,
+	OP_VALUE_LT = 17,
+
 	OP_INVALID = 99,
 
 	LEAF_TERM = 100,

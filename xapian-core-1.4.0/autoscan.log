@@ -1259,6 +1259,12 @@ autoscan: warning: missing AC_CHECK_HEADER_STDBOOL wanted by:
 	geospatial/latlong_metrics.cc:56
 	geospatial/latlong_metrics.cc:85
 	geospatial/latlong_posting_source.cc:154
+	include/query.h:187
+	include/query.h:241
+	include/query.h:271
+	include/query.h:340
+	include/query.h:342
+	include/query.h:346
 	include/xapian/compactor.h:81
 	include/xapian/compactor.h:93
 	include/xapian/database.h:153
@@ -1355,12 +1361,12 @@ autoscan: warning: missing AC_CHECK_HEADER_STDBOOL wanted by:
 	include/xapian/postingsource.h:715
 	include/xapian/postingsource.h:735
 	include/xapian/postingsource.h:737
-	include/xapian/query.h:187
-	include/xapian/query.h:241
-	include/xapian/query.h:271
-	include/xapian/query.h:340
+	include/xapian/query.h:183
+	include/xapian/query.h:237
+	include/xapian/query.h:267
+	include/xapian/query.h:336
+	include/xapian/query.h:338
 	include/xapian/query.h:342
-	include/xapian/query.h:346
 	include/xapian/queryparser.h:61
 	include/xapian/queryparser.h:103
 	include/xapian/queryparser.h:393
@@ -1553,10 +1559,10 @@ autoscan: warning: missing AC_CHECK_HEADER_STDBOOL wanted by:
 	matcher/valuerangepostlist.h:86
 	matcher/valuerangepostlist.h:88
 	matcher/valuestreamdocument.cc:63
-	matcher/valuegtpostlist.h:44
 	matcher/valuegtpostlist.cc:64
-	matcher/valueltpostlist.h:47
 	matcher/valueltpostlist.cc:68
+	matcher/valuegtpostlist.h:44
+	matcher/valueltpostlist.h:47
 	net/progclient.cc:67
 	net/progclient.h:90
 	net/remoteconnection.cc:96
@@ -2799,13 +2805,16 @@ autoscan: warning: missing AC_CHECK_HEADER_STDBOOL wanted by:
 	geospatial/latlong_posting_source.cc:159
 	geospatial/latlong_posting_source.cc:160
 	geospatial/latlong_posting_source.cc:169
+	include/query.h:197
+	include/query.h:198
+	include/query.h:343
 	include/xapian/error.h:104
 	include/xapian/geospatial.h:153
 	include/xapian/intrusive_ptr.h:253
 	include/xapian/keymaker.h:124
-	include/xapian/query.h:197
-	include/xapian/query.h:198
-	include/xapian/query.h:343
+	include/xapian/query.h:193
+	include/xapian/query.h:194
+	include/xapian/query.h:339
 	include/xapian/queryparser.h:455
 	include/xapian/queryparser.h:499
 	include/xapian/queryparser.h:550
@@ -4776,6 +4785,14 @@ autoscan: warning: missing AC_C_INLINE wanted by:
 	include/xapian.h:124
 	include/xapian.h:133
 	include/xapian.h:142
+	include/query.h:354
+	include/query.h:360
+	include/query.h:366
+	include/query.h:372
+	include/query.h:378
+	include/query.h:384
+	include/query.h:410
+	include/query.h:416
 	include/xapian/dbfactory.h:60
 	include/xapian/dbfactory.h:84
 	include/xapian/dbfactory.h:103
@@ -4844,14 +4861,14 @@ autoscan: warning: missing AC_C_INLINE wanted by:
 	include/xapian/postingiterator.h:157
 	include/xapian/postingiterator.h:161
 	include/xapian/postingsource.h:391
-	include/xapian/query.h:354
-	include/xapian/query.h:360
-	include/xapian/query.h:366
-	include/xapian/query.h:372
-	include/xapian/query.h:378
-	include/xapian/query.h:384
-	include/xapian/query.h:410
-	include/xapian/query.h:416
+	include/xapian/query.h:350
+	include/xapian/query.h:356
+	include/xapian/query.h:362
+	include/xapian/query.h:368
+	include/xapian/query.h:374
+	include/xapian/query.h:380
+	include/xapian/query.h:406
+	include/xapian/query.h:412
 	include/xapian/queryparser.h:1141
 	include/xapian/queryparser.h:1179
 	include/xapian/termiterator.h:147
@@ -5433,6 +5450,11 @@ autoscan: warning: missing AC_TYPE_SIZE_T wanted by:
 	geospatial/latlongcoord.cc:60
 	geospatial/latlong_metrics.cc:79
 	geospatial/latlong_posting_source.cc:223
+	include/query.h:284
+	include/query.h:291
+	include/query.h:324
+	include/query.h:455
+	include/query.h:456
 	include/xapian/compactor.h:67
 	include/xapian/compactor.h:170
 	include/xapian/database.h:67
@@ -5445,11 +5467,11 @@ autoscan: warning: missing AC_TYPE_SIZE_T wanted by:
 	include/xapian/matchspy.h:253
 	include/xapian/matchspy.h:256
 	include/xapian/mset.h:122
-	include/xapian/query.h:284
-	include/xapian/query.h:291
-	include/xapian/query.h:324
-	include/xapian/query.h:455
-	include/xapian/query.h:456
+	include/xapian/query.h:280
+	include/xapian/query.h:287
+	include/xapian/query.h:320
+	include/xapian/query.h:451
+	include/xapian/query.h:452
 	include/xapian/queryparser.h:1151
 	include/xapian/unicode.h:57
 	include/xapian/unicode.h:70
