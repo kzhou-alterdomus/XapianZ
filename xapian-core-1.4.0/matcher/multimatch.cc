@@ -269,16 +269,6 @@ MultipleMatchSpy::operator()(const Xapian::Document &doc, double wt) {
     }
 }
 
-#if defined(USE_GET_ALL_DOCS)
-MultiMatch::Internal::Internal() : first_get_mset(true), first(0), vsdoc(NULL), pl() {
-}
-MultiMatch::Internal::~Internal() {
-    if (vsdoc != NULL) {
-	delete vsdoc;
-    }
-}
-#endif
-
 ////////////////////////////////////
 // Initialisation and cleaning up //
 ////////////////////////////////////
@@ -308,9 +298,6 @@ MultiMatch::MultiMatch(const Xapian::Database &db_,
 	  weight(weight_),
 	  is_remote(db.internal.size()),
 	  matchspies(matchspies_)
-#if defined(USE_GET_ALL_DOCS)
-	  , internal(new MultiMatch::Internal)
-#endif
 {
     LOGCALL_CTOR(MATCH, "MultiMatch", db_ | query_ | qlen | omrset | collapse_max_ | collapse_key_ | percent_cutoff_ | weight_cutoff_ | int(order_) | sort_key_ | int(sort_by_) | sort_value_forward_ | time_limit_| stats | weight_ | matchspies_ | have_sorter | have_mdecider);
 
@@ -507,9 +494,7 @@ MultiMatch::get_mset(Xapian::doccount first, Xapian::doccount maxitems,
 	    if (matches_lower_bound > collapse_max)
 		matches_lower_bound = collapse_max;
 	}
-    
-	//add zkb: count
-	matches_estimated = items.size();
+
 	mset.internal = new Xapian::MSet::Internal(
 					   first,
 					   matches_upper_bound,
@@ -629,19 +614,7 @@ MultiMatch::get_mset(Xapian::doccount first, Xapian::doccount maxitems,
 	    if (ptr) {
 		new_item.sort_key = *ptr;
 	    } else if (sorter) {
-#if defined(USE_DEFAULT_SORTER)
-		if (sorter->isDefaultSorter()) {
-		    if (NULL != sorter->getStringToInt()) {
-			sorter->getSortValue(doc, pl->get_sortvalue(), new_item.sort_int);
-		    } else {
-			sorter->getSortValue(doc, pl->get_sortvalue(), new_item.sort_key);
-		    }
-		} else {
-			(*sorter)(doc, new_item.sort_key);
-		}
-#else
 		new_item.sort_key = (*sorter)(doc);
-#endif
 	    } else {
 		new_item.sort_key = vsdoc.get_value(sort_key);
 	    }
@@ -1147,9 +1120,7 @@ new_greatest_weight:
 	    }
 	}
     }
-	
-	//add zkb: count
-	matches_estimated = items.size();
+
     mset.internal = new Xapian::MSet::Internal(
 				       first,
 				       matches_upper_bound,
@@ -1161,285 +1132,3 @@ new_greatest_weight:
 				       max_possible, greatest_wt, items,
 				       percent_scale * 100.0);
 }
-
-#if defined(USE_GET_ALL_DOCS)
-void
-MultiMatch::get_mset(Xapian::doccount maxitems,
-		     Xapian::MSet * mset,
-		     Xapian::Weight::Internal & stats)
-{
-    LOGCALL_VOID(MATCH, "MultiMatch::get_mset", maxitems | stats);
-
-    if (query.empty()) {
-	return;
-    }
-
-    Assert(!leaves.empty());
-
-#ifdef XAPIAN_HAS_REMOTE_BACKEND
-    // If there's only one database and it's remote, we can just unserialise
-    // its MSet and return that.
-    if (leaves.size() == 1 && is_remote[0]) {
-	return;
-    }
-#endif
-
-    Xapian::doccount definite_matches_not_seen = 0;
-    if (internal->first_get_mset) {
-    internal->first_get_mset = false;
-
-    // Start matchers.
-    for (auto && leaf : leaves) {
-	leaf->start_match(0, db.get_doccount(), db.get_doccount(), stats);
-    }
-
-    // Get postlists and term info
-    vector<PostList *> postlists;
-    Xapian::termcount total_subqs = 0;
-    // Keep a count of matches which we know exist, but we won't see.  This
-    // occurs when a submatch is remote, and returns a lower bound on the
-    // number of matching documents which is higher than the number of
-    // documents it returns (because it wasn't asked for more documents).
-    for (size_t i = 0; i != leaves.size(); ++i) {
-	PostList * pl = leaves[i]->get_postlist(this, &total_subqs);
-	postlists.push_back(pl);
-    }
-    Assert(!postlists.empty());
-
-    internal->vsdoc = new ValueStreamDocument(db);
-    ValueStreamDocument & vsdoc = *internal->vsdoc;
-    ++vsdoc._refs;
-
-    // Get a single combined postlist
-    if (postlists.size() == 1) {
-	internal->pl.reset(postlists.front());
-    } else {
-	internal->pl.reset(new MergePostList(postlists, this, vsdoc));
-    }
-
-    LOGLINE(MATCH, "pl = (" << internal->pl->get_description() << ")");
-    } // if (internal->first_get_mset)
-
-    ValueStreamDocument & vsdoc = *internal->vsdoc;
-    Xapian::Document doc(&vsdoc);
-
-    // Empty result set
-    Xapian::doccount docs_matched = 0;
-    double greatest_wt = 0;
-    vector<Xapian::Internal::MSetItem> items;
-
-    // maximum weight a document could possibly have
-    const double max_possible = internal->pl->recalc_maxweight();
-
-    LOGLINE(MATCH, "pl = (" << internal->pl->get_description() << ")");
-    recalculate_w_max = false;
-
-    Xapian::doccount matches_upper_bound = internal->pl->get_termfreq_max();
-    Xapian::doccount matches_lower_bound = 0;
-    Xapian::doccount matches_estimated = internal->pl->get_termfreq_est();
-
-    // If we have a match decider, the lower bound must be
-    // set to 0 as we could discard all hits.  Otherwise set it to the
-    // minimum number of entries which the postlist could return.
-    matches_lower_bound = internal->pl->get_termfreq_min();
-    
-    // Prepare the matchspy
-    Xapian::MatchSpy *matchspy = NULL;
-    MultipleMatchSpy multispy(matchspies);
-    if (!matchspies.empty()) {
-	if (matchspies.size() == 1) {
-	    matchspy = matchspies[0].get();
-	} else {
-	    matchspy = &multispy;
-	}
-    }
-
-    // Set max number of results that we want.
-    if (mset != NULL) {
-	items.reserve(maxitems);
-    }
-
-    // Perform query
-    bool is_done = false;
-    while (true) {
-	PostList * pl_copy = internal->pl.get();
-	if (rare(next_handling_prune(pl_copy, 0, this))) {
-	    (void)internal->pl.release();
-	    internal->pl.reset(pl_copy);
-	    LOGLINE(MATCH, "*** REPLACING ROOT");
-	}
-
-	if (rare(internal->pl->at_end())) {
-	    LOGLINE(MATCH, "Reached end of potential matches");
-	    is_done = true;
-	    break;
-	}
-
-	Xapian::docid did = internal->pl->get_docid();
-	vsdoc.set_document(did);
-	LOGLINE(MATCH, "Candidate document id " << did << " wt " << wt);
-
-	if (matchspy) {
-	    matchspy->operator()(doc, 1);
-	}
-
-	if (mset != NULL) {
-	    items.push_back(Xapian::Internal::MSetItem(1, did));
-	    docs_matched++;
-	    if (items.size() >= maxitems) {
-		LOGLINE(MATCH, "Reached end of max_msize matches");
-		break;
-	    }
-	}
-    }
-
-    // done with posting list tree
-    if (is_done) {
-	internal->pl.reset(NULL);
-    }
-
-    if (mset == NULL) {
-	return;
-    }
-
-    LOGLINE(MATCH,
-	    "docs_matched = " << docs_matched <<
-	    ", definite_matches_not_seen = " << definite_matches_not_seen <<
-	    ", matches_lower_bound = " << matches_lower_bound <<
-	    ", matches_estimated = " << matches_estimated <<
-	    ", matches_upper_bound = " << matches_upper_bound);
-
-    // Adjust docs_matched to take account of documents which matched remotely
-    // but weren't sent across.
-    docs_matched += definite_matches_not_seen;
-
-    Xapian::doccount uncollapsed_lower_bound = matches_lower_bound;
-    Xapian::doccount uncollapsed_upper_bound = matches_upper_bound;
-    Xapian::doccount uncollapsed_estimated = matches_estimated;
-    
-    Xapian::doccount first = internal->first;
-    internal->first += items.size();
-    mset->internal = new Xapian::MSet::Internal(
-				       first,
-				       matches_upper_bound,
-				       matches_lower_bound,
-				       matches_estimated,
-				       uncollapsed_upper_bound,
-				       uncollapsed_lower_bound,
-				       uncollapsed_estimated,
-				       max_possible, greatest_wt, items,
-				       0.0);
-}
-
-void
-MultiMatch::count(Xapian::MSet & mset, Xapian::Weight::Internal & stats)
-{
-    LOGCALL_VOID(MATCH, "MultiMatch::count", "");
-
-    if (query.empty()) {
-	return;
-    }
-
-    Assert(!leaves.empty());
-
-#ifdef XAPIAN_HAS_REMOTE_BACKEND
-    // If there's only one database and it's remote, we can just unserialise
-    // its MSet and return that.
-    if (leaves.size() == 1 && is_remote[0]) {
-	return;
-    }
-#endif
-
-    // Start matchers.
-    for (auto && leaf : leaves) {
-	leaf->start_match(0, db.get_doccount(), db.get_doccount(), stats);
-    }
-
-    // Get postlists and term info
-    vector<PostList *> postlists;
-    Xapian::termcount total_subqs = 0;
-    // Keep a count of matches which we know exist, but we won't see.  This
-    // occurs when a submatch is remote, and returns a lower bound on the
-    // number of matching documents which is higher than the number of
-    // documents it returns (because it wasn't asked for more documents).
-    for (size_t i = 0; i != leaves.size(); ++i) {
-	PostList * pl = leaves[i]->get_postlist(this, &total_subqs);
-	postlists.push_back(pl);
-    }
-    Assert(!postlists.empty());
-
-    ValueStreamDocument vsdoc(db);
-    ++vsdoc._refs;
-
-    // Get a single combined postlist
-    AutoPtr<PostList> pl;
-    if (postlists.size() == 1) {
-	pl.reset(postlists.front());
-    } else {
-	pl.reset(new MergePostList(postlists, this, vsdoc));
-    }
-
-    LOGLINE(MATCH, "pl = (" << pl->get_description() << ")");
-
-    // Empty result set
-    double greatest_wt = 0;
-    vector<Xapian::Internal::MSetItem> items;
-
-    // maximum weight a document could possibly have
-    const double max_possible = pl->recalc_maxweight();
-
-    LOGLINE(MATCH, "pl = (" << pl->get_description() << ")");
-    recalculate_w_max = false;
-
-    Xapian::doccount matches_upper_bound = pl->get_termfreq_max();
-    Xapian::doccount matches_lower_bound = 0;
-    Xapian::doccount matches_estimated = 0;
-
-    // If we have a match decider, the lower bound must be
-    // set to 0 as we could discard all hits.  Otherwise set it to the
-    // minimum number of entries which the postlist could return.
-    matches_lower_bound = pl->get_termfreq_min();
-    
-    // Perform query
-    while (true) {
-	PostList * pl_copy = pl.get();
-	if (rare(next_handling_prune(pl_copy, 0, this))) {
-	    (void)pl.release();
-	    pl.reset(pl_copy);
-	    LOGLINE(MATCH, "*** REPLACING ROOT");
-	}
-
-	if (rare(pl->at_end())) {
-	    LOGLINE(MATCH, "Reached end of potential matches");
-	    break;
-	}
-
-	matches_estimated += 1;
-    }
-
-    // done with posting list tree
-    pl.reset(NULL);
-    
-    LOGLINE(MATCH,
-	    "docs_matched = " << matches_estimated <<
-	    ", definite_matches_not_seen = " << definite_matches_not_seen <<
-	    ", matches_lower_bound = " << matches_lower_bound <<
-	    ", matches_estimated = " << matches_estimated <<
-	    ", matches_upper_bound = " << matches_upper_bound);
-
-    Xapian::doccount uncollapsed_lower_bound = matches_lower_bound;
-    Xapian::doccount uncollapsed_upper_bound = matches_upper_bound;
-    Xapian::doccount uncollapsed_estimated = matches_estimated;
-    
-    mset.internal = new Xapian::MSet::Internal(
-				       0,
-				       matches_upper_bound,
-				       matches_lower_bound,
-				       matches_estimated,
-				       uncollapsed_upper_bound,
-				       uncollapsed_lower_bound,
-				       uncollapsed_estimated,
-				       max_possible, greatest_wt, items,
-				       0.0);
-}
-#endif
