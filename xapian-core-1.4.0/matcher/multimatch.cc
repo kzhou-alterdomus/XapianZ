@@ -494,7 +494,9 @@ MultiMatch::get_mset(Xapian::doccount first, Xapian::doccount maxitems,
 	    if (matches_lower_bound > collapse_max)
 		matches_lower_bound = collapse_max;
 	}
-
+    
+	//add zkb: count
+    matches_estimated = items.size();
 	mset.internal = new Xapian::MSet::Internal(
 					   first,
 					   matches_upper_bound,
@@ -1121,6 +1123,8 @@ new_greatest_weight:
 	}
     }
 
+	//add zkb: count
+    matches_estimated = items.size();
     mset.internal = new Xapian::MSet::Internal(
 				       first,
 				       matches_upper_bound,
