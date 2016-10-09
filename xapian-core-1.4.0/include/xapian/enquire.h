@@ -655,6 +655,9 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	    return TermIterator();
 	}
 
+	//add zkb: Set the null value to the maximum or minimum
+	void set_null_direct(const bool flag = false);
+
 	/// Return a string describing this object.
 	std::string get_description() const;
 };

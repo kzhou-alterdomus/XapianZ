@@ -261,7 +261,7 @@ class MultipleMatchSpy : public Xapian::MatchSpy {
     void operator()(const Xapian::Document &doc, double wt);
 };
 
-void 
+void
 MultipleMatchSpy::operator()(const Xapian::Document &doc, double wt) {
     LOGCALL_VOID(MATCH, "MultipleMatchSpy::operator()", doc | wt);
     for (auto i : spies) {
@@ -375,9 +375,10 @@ MultiMatch::get_mset(Xapian::doccount first, Xapian::doccount maxitems,
 		     Xapian::MSet & mset,
 		     Xapian::Weight::Internal & stats,
 		     const Xapian::MatchDecider *mdecider,
-		     const Xapian::KeyMaker *sorter)
+		     const Xapian::KeyMaker *sorter,
+			 const bool direct_null_value)
 {
-    LOGCALL_VOID(MATCH, "MultiMatch::get_mset", first | maxitems | check_at_least | Literal("mset") | stats | Literal("mdecider") | Literal("sorter"));
+    LOGCALL_VOID(MATCH, "MultiMatch::get_mset", first | maxitems | check_at_least | Literal("mset") | stats | Literal("mdecider") | Literal("sorter") | direct_null_value );
     AssertRel(check_at_least,>=,maxitems);
 
     if (query.empty()) {
@@ -494,9 +495,7 @@ MultiMatch::get_mset(Xapian::doccount first, Xapian::doccount maxitems,
 	    if (matches_lower_bound > collapse_max)
 		matches_lower_bound = collapse_max;
 	}
-    
-	//add zkb: count
-    matches_estimated = items.size();
+
 	mset.internal = new Xapian::MSet::Internal(
 					   first,
 					   matches_upper_bound,
@@ -538,10 +537,11 @@ MultiMatch::get_mset(Xapian::doccount first, Xapian::doccount maxitems,
 
     /// Comparison functor for sorting MSet
     bool sort_forward = (order != Xapian::Enquire::DESCENDING);
-    MSetCmp mcmp(get_msetcmp_function(sort_by, sort_forward, sort_value_forward));
+	MSetCmp mcmp(get_msetcmp_function(sort_by, sort_forward, sort_value_forward, false));
+    MSetCmp mcmp_end(get_msetcmp_function(sort_by, sort_forward, sort_value_forward, direct_null_value));
 
     // Perform query
-
+	
     // We form the mset in two stages.  In the first we fill up our working
     // mset.  Adding a new document does not remove another.
     //
@@ -1019,7 +1019,7 @@ new_greatest_weight:
 	    matches_estimated =
 		Xapian::doccount(matches_estimated * estimate_scale + 0.5);
 	    if (matches_estimated < matches_lower_bound)
-	       	matches_estimated = matches_lower_bound;
+		matches_estimated = matches_lower_bound;
 	}
 
 	if (collapser || mdecider) {
@@ -1082,13 +1082,13 @@ new_greatest_weight:
     LOGLINE(MATCH, "sorting " << items.size() << " entries");
 
     // Need a stable sort, but this is provided by comparison operator
-    sort(items.begin(), items.end(), mcmp);
+	sort(items.begin(), items.end(), mcmp_end);
 
     if (!items.empty()) {
 	LOGLINE(MATCH, "min weight in mset = " << items.back().wt);
 	LOGLINE(MATCH, "max weight in mset = " << items[0].wt);
     }
-
+	
     AssertRel(matches_estimated,>=,matches_lower_bound);
     AssertRel(matches_estimated,<=,matches_upper_bound);
 
@@ -1123,8 +1123,6 @@ new_greatest_weight:
 	}
     }
 
-	//add zkb: count
-    matches_estimated = items.size();
     mset.internal = new Xapian::MSet::Internal(
 				       first,
 				       matches_upper_bound,

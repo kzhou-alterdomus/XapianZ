@@ -55,7 +55,7 @@ msetcmp_by_relevance(const Xapian::Internal::MSetItem &a,
 }
 
 // Order by value, then docid.
-template<bool FORWARD_VALUE, bool FORWARD_DID> bool
+template<bool FORWARD_VALUE, bool FORWARD_DID, bool DRIECT_NULL_VALUE> bool
 msetcmp_by_value(const Xapian::Internal::MSetItem &a,
 		 const Xapian::Internal::MSetItem &b)
 {
@@ -64,13 +64,28 @@ msetcmp_by_value(const Xapian::Internal::MSetItem &a,
 	if (a.did == 0) return false;
 	if (b.did == 0) return true;
     }
-    if (a.sort_key > b.sort_key) return FORWARD_VALUE;
-    if (a.sort_key < b.sort_key) return !FORWARD_VALUE;
+	if (DRIECT_NULL_VALUE) {
+		if (a.sort_key.empty()) {
+			return true;
+		}
+		else if (b.sort_key.empty()) {
+			return false;
+		}
+		else {
+			if (a.sort_key > b.sort_key) return FORWARD_VALUE;
+			if (a.sort_key < b.sort_key) return !FORWARD_VALUE;
+		}
+	}
+	else {
+		if (a.sort_key > b.sort_key) return FORWARD_VALUE;
+		if (a.sort_key < b.sort_key) return !FORWARD_VALUE;
+	}
     return msetcmp_by_did<FORWARD_DID, FORWARD_VALUE>(a, b);
 }
 
+//add zkb : Order null value
 // Order by value, then relevance, then docid.
-template<bool FORWARD_VALUE, bool FORWARD_DID> bool
+template<bool FORWARD_VALUE, bool FORWARD_DID, bool DRIECT_NULL_VALUE> bool
 msetcmp_by_value_then_relevance(const Xapian::Internal::MSetItem &a,
 				const Xapian::Internal::MSetItem &b)
 {
@@ -79,15 +94,30 @@ msetcmp_by_value_then_relevance(const Xapian::Internal::MSetItem &a,
 	if (a.did == 0) return false;
 	if (b.did == 0) return true;
     }
-    if (a.sort_key > b.sort_key) return FORWARD_VALUE;
-    if (a.sort_key < b.sort_key) return !FORWARD_VALUE;
+	if (DRIECT_NULL_VALUE) {
+		if (a.sort_key.empty()) {
+			return true;
+		}
+		else if (b.sort_key.empty()) {
+			return false;
+		}
+		else {
+			if (a.sort_key > b.sort_key) return FORWARD_VALUE;
+			if (a.sort_key < b.sort_key) return !FORWARD_VALUE;
+		}
+	}
+	else {
+		if (a.sort_key > b.sort_key) return FORWARD_VALUE;
+		if (a.sort_key < b.sort_key) return !FORWARD_VALUE;
+	}
     if (a.wt > b.wt) return true;
     if (a.wt < b.wt) return false;
     return msetcmp_by_did<FORWARD_DID, FORWARD_VALUE>(a, b);
 }
 
+//add zkb : Order null value
 // Order by relevance, then value, then docid.
-template<bool FORWARD_VALUE, bool FORWARD_DID> bool
+template<bool FORWARD_VALUE, bool FORWARD_DID, bool DRIECT_NULL_VALUE> bool
 msetcmp_by_relevance_then_value(const Xapian::Internal::MSetItem &a,
 				const Xapian::Internal::MSetItem &b)
 {
@@ -98,35 +128,71 @@ msetcmp_by_relevance_then_value(const Xapian::Internal::MSetItem &a,
     }
     if (a.wt > b.wt) return true;
     if (a.wt < b.wt) return false;
-    if (a.sort_key > b.sort_key) return FORWARD_VALUE;
-    if (a.sort_key < b.sort_key) return !FORWARD_VALUE;
+	if (DRIECT_NULL_VALUE) {
+		if (a.sort_key.empty()) {
+			return true;
+		}
+		else if (b.sort_key.empty()) {
+			return false;
+		}
+		else {
+			if (a.sort_key > b.sort_key) return FORWARD_VALUE;
+			if (a.sort_key < b.sort_key) return !FORWARD_VALUE;
+		}
+	}
+	else {
+		if (a.sort_key > b.sort_key) return FORWARD_VALUE;
+		if (a.sort_key < b.sort_key) return !FORWARD_VALUE;
+	}
     return msetcmp_by_did<FORWARD_DID, FORWARD_VALUE>(a, b);
 }
 
-static mset_cmp mset_cmp_table[] = {
-    // Xapian::Enquire::Internal::REL
-    msetcmp_by_relevance<false>,
-    0,
-    msetcmp_by_relevance<true>,
-    0,
-    // Xapian::Enquire::Internal::VAL
-    msetcmp_by_value<false, false>,
-    msetcmp_by_value<true, false>,
-    msetcmp_by_value<false, true>,
-    msetcmp_by_value<true, true>,
-    // Xapian::Enquire::Internal::VAL_REL
-    msetcmp_by_value_then_relevance<false, false>,
-    msetcmp_by_value_then_relevance<true, false>,
-    msetcmp_by_value_then_relevance<false, true>,
-    msetcmp_by_value_then_relevance<true, true>,
-    // Xapian::Enquire::Internal::REL_VAL
-    msetcmp_by_relevance_then_value<false, false>,
-    msetcmp_by_relevance_then_value<true, false>,
-    msetcmp_by_relevance_then_value<false, true>,
-    msetcmp_by_relevance_then_value<true, true>
-};
+static mset_cmp mset_cmp_table[][16] = { {
+	// Xapian::Enquire::Internal::REL
+	msetcmp_by_relevance<false>,
+	0,
+	msetcmp_by_relevance<true>,
+	0,
+	// Xapian::Enquire::Internal::VAL
+	msetcmp_by_value<false, false, false>,
+	msetcmp_by_value<true, false, false>,
+	msetcmp_by_value<false, true, false>,
+	msetcmp_by_value<true, true, false>,
+	// Xapian::Enquire::Internal::VAL_REL
+	msetcmp_by_value_then_relevance<false, false, false>,
+	msetcmp_by_value_then_relevance<true, false, false>,
+	msetcmp_by_value_then_relevance<false, true, false>,
+	msetcmp_by_value_then_relevance<true, true, false>,
+	// Xapian::Enquire::Internal::REL_VAL
+	msetcmp_by_relevance_then_value<false, false, false>,
+	msetcmp_by_relevance_then_value<true, false, false>,
+	msetcmp_by_relevance_then_value<false, true, false>,
+	msetcmp_by_relevance_then_value<true, true, false>
+}, {
+	// Xapian::Enquire::Internal::REL
+	msetcmp_by_relevance<false>,
+	0,
+	msetcmp_by_relevance<true>,
+	0,
+	// Xapian::Enquire::Internal::VAL
+	msetcmp_by_value<false, false, true>,
+	msetcmp_by_value<true, false, true>,
+	msetcmp_by_value<false, true, true>,
+	msetcmp_by_value<true, true, true>,
+	// Xapian::Enquire::Internal::VAL_REL
+	msetcmp_by_value_then_relevance<false, false, true>,
+	msetcmp_by_value_then_relevance<true, false, true>,
+	msetcmp_by_value_then_relevance<false, true, true>,
+	msetcmp_by_value_then_relevance<true, true, true>,
+	// Xapian::Enquire::Internal::REL_VAL
+	msetcmp_by_relevance_then_value<false, false, true>,
+	msetcmp_by_relevance_then_value<true, false, true>,
+	msetcmp_by_relevance_then_value<false, true, true>,
+	msetcmp_by_relevance_then_value<true, true, true>
+} };
 
-mset_cmp get_msetcmp_function(Xapian::Enquire::Internal::sort_setting sort_by, bool sort_forward, bool sort_value_forward) {
+mset_cmp get_msetcmp_function(Xapian::Enquire::Internal::sort_setting sort_by, bool sort_forward, bool sort_value_forward, const bool direct_null) {
     if (sort_by == Xapian::Enquire::Internal::REL) sort_value_forward = false;
-    return mset_cmp_table[sort_by * 4 + sort_forward * 2 + sort_value_forward];
+	int direct_num = direct_null ? 1 : 0;
+    return mset_cmp_table[direct_num][sort_by * 4 + sort_forward * 2 + sort_value_forward];
 }

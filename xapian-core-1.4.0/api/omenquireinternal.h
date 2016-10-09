@@ -166,6 +166,9 @@ class Enquire::Internal : public Xapian::Internal::intrusive_base {
 	/// The parameter required for TradWeight query expansion.
 	double expand_k;
 
+	//add zkb: Set the null value to the maximum or minimum
+    bool direct_null_value;
+
 	vector<Xapian::Internal::opt_intrusive_ptr<MatchSpy>> spies;
 
 	explicit Internal(const Xapian::Database &databases);

@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301
  * USA
  */
-
+#include <iostream>
 #include <config.h>
 #include "xapian/enquire.h"
 
@@ -484,7 +484,8 @@ Enquire::Internal::Internal(const Database &db_)
     order(Enquire::ASCENDING), percent_cutoff(0), weight_cutoff(0),
     sort_key(Xapian::BAD_VALUENO), sort_by(REL), sort_value_forward(true),
     sorter(), time_limit(0.0), weight(0),
-    eweightname("trad"), expand_k(1.0)
+    eweightname("trad"), expand_k(1.0),
+	direct_null_value(false)
 {
     if (db.internal.empty()) {
 	throw InvalidArgumentError("Can't make an Enquire object from an uninitialised Database object.");
@@ -543,9 +544,10 @@ Enquire::Internal::get_mset(Xapian::doccount first, Xapian::doccount maxitems,
 		       (sorter.get() != NULL),
 		       (mdecider != NULL));
     // Run query and put results into supplied Xapian::MSet object.
+	// add zkb : direct_null_value
     MSet retval;
     match.get_mset(first, maxitems, check_at_least, retval,
-		   *(stats.get()), mdecider, sorter.get());
+		   *(stats.get()), mdecider, sorter.get(), direct_null_value);
     if (first_orig != first && retval.internal.get()) {
 	retval.internal->firstitem = first_orig;
     }
@@ -897,6 +899,12 @@ Enquire::set_time_limit(double time_limit)
     internal->time_limit = time_limit;
 }
 
+/*void
+Enquire::set_null_directs()
+{
+    std::cout << "zkbbbbbbbbbbbbbb" << std::endl;
+}*/
+
 MSet
 Enquire::get_mset(Xapian::doccount first, Xapian::doccount maxitems,
 		  Xapian::doccount check_at_least, const RSet *rset,
@@ -928,6 +936,13 @@ Enquire::get_matching_terms_begin(Xapian::docid did) const
     RETURN(internal->get_matching_terms(did));
 }
 
+//add zkb: Set the null value to the maximum or minimum
+void 
+Enquire::set_null_direct(const bool flag)
+{
+    internal->direct_null_value = flag;
+}
+	
 string
 Enquire::get_description() const
 {

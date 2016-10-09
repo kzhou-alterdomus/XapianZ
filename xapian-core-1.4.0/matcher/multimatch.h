@@ -119,7 +119,7 @@ class MultiMatch
 		   bool have_sorter, bool have_mdecider);
 
 	/** Run the match and generate an MSet object.
-	 *
+	 *  //add zkb
 	 *  @param sorter    Xapian::KeyMaker functor (or NULL for no KeyMaker)
 	 */
 	void get_mset(Xapian::doccount first,
@@ -128,7 +128,8 @@ class MultiMatch
 		      Xapian::MSet & mset,
 		      Xapian::Weight::Internal & stats,
 		      const Xapian::MatchDecider * mdecider,
-		      const Xapian::KeyMaker * sorter);
+		      const Xapian::KeyMaker * sorter,
+		      const bool direct_null_value = false);
 
 	/** Called by postlists to indicate that they've rearranged themselves
 	 *  and the maxweight now possible is smaller.

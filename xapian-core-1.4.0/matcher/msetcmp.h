@@ -30,7 +30,7 @@ typedef bool (* mset_cmp)(const Xapian::Internal::MSetItem &,
 			  const Xapian::Internal::MSetItem &);
 
 /// Select the appropriate msetcmp function.
-mset_cmp get_msetcmp_function(Xapian::Enquire::Internal::sort_setting sort_by, bool sort_forward, bool sort_value_forward);
+mset_cmp get_msetcmp_function(Xapian::Enquire::Internal::sort_setting sort_by, bool sort_forward, bool sort_value_forward, const bool direct_null);
 
 /// MSetItem comparison functor.
 class MSetCmp {
