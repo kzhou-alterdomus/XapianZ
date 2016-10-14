@@ -1013,7 +1013,7 @@ QueryValueLT::postlist(QueryOptimiser *qopt, double factor) const
 		if (limit < lb) {
 			RETURN(new EmptyPostList);
 		}
-		if (limit >= db.get_value_upper_bound(slot)) {
+		if (limit > db.get_value_upper_bound(slot)) {
 			// The range check isn't needed, but we do still need to consider
 			// which documents have a value set in this slot.  If this value is
 			// set for all documents, we can replace it with the MatchAll
